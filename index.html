@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#008080">
+<title>Pareto_Dominance.exe</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #008080;
+    font-family: Tahoma, "MS Sans Serif", sans-serif; }
+  body { display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: bold; font-size: 14px; }
+  a { color: #ffff55; }
+</style>
+</head>
+<body>
+<noscript>
+  <div>JavaScript is disabled. Choose manually:<br>
+    <a href="simulation.html">Desktop</a> &nbsp;|&nbsp;
+    <a href="sim_mobile.html">Mobile</a>
+  </div>
+</noscript>
+<script>
+(function () {
+  // Manual override: index.html?v=mobile   or   index.html?v=pc
+  var v = new URLSearchParams(location.search).get('v');
+  if (v === 'mobile') { location.replace('sim_mobile.html'); return; }
+  if (v === 'pc' || v === 'desktop') { location.replace('simulation.html'); return; }
+
+  // Auto-detect: mobile UA, iPadOS-with-touch, OR touch-primary device
+  var mobile =
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||  // iPadOS 13+
+    window.matchMedia('(pointer: coarse)').matches;
+
+  location.replace(mobile ? 'sim_mobile.html' : 'simulation.html');
+})();
+</script>
+</body>
+</html>
