@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pareto Dominance in 3D – Uber rides</title>
+
+<script>
+  var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.matchMedia("(pointer: coarse)").matches;
+  if (isMobile && !window.location.search.includes("force=pc")) {
+      window.location.replace("sim_mobile.html");
+  }
+</script>
+<style>
+:root{--face:#c0c0c0;--hi:#fff;--sh:#808080;--dk:#000;--navy:#000080;--desk:#008080;--good:#0a7a0a;--bad:#c00000;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--desk);font-family:Tahoma,"MS Sans Serif",Verdana,sans-serif;font-size:clamp(15px,1.3vw,30px);color:#000;padding:8px}
+.win{height:100%;display:flex;flex-direction:column;background:var(--face);border:2px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);box-shadow:inset -1px -1px var(--sh),inset 1px 1px #dfdfdf;padding:3px}
+.title{background:linear-gradient(90deg,var(--navy),#1084d0);color:#fff;font-weight:bold;padding:4px 10px;display:flex;justify-content:space-between;font-size:1.05em}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:57% 43%;gap:8px;padding:8px 4px 4px}
+.inset{border:2px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);background:#fbfbf4;position:relative;min-height:0;overflow:hidden}
+#cv{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#ll{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font-weight:bold;font-size:.8em;color:#000;text-shadow:1px 1px #fff,-1px -1px #fff,1px -1px #fff,-1px 1px #fff,0 0 4px #fff;will-change:transform}
+.lb.ax{font-size:1em}
+.tip{position:absolute;display:none;background:#ffffe1;border:1px solid #000;padding:4px 10px;font-size:.85em;line-height:1.3;box-shadow:2px 2px 0 rgba(0,0,0,.3);pointer-events:none;white-space:nowrap;z-index:6}
+.cap{position:absolute;left:8px;top:6px;font-weight:bold;background:#ffffe1;border:1px solid #000;padding:2px 8px;z-index:5}
+.leg{position:absolute;left:8px;bottom:6px;background:#ffffe1;border:1px solid #000;padding:3px 8px;line-height:1.35;z-index:5}
+.dot{display:inline-block;width:.8em;height:.8em;border-radius:50%;border:1px solid #000;margin-right:.35em;vertical-align:-1px}
+.side{display:flex;flex-direction:column;min-height:0}
+.panel{background:#fff;padding:8px 12px;overflow:auto;flex:1}
+h2{margin:0 0 .3em;font-size:1.2em;color:var(--navy)}
+p{margin:.45em 0}
+.f{background:#000;color:#ffff55;font-family:"Courier New",monospace;font-weight:bold;padding:4px 10px;margin:.3em 0}
+table{border-collapse:collapse;width:100%;margin-top:.4em}
+th,td{padding:.16em .4em;text-align:left;border-bottom:1px solid #c8c8c8;white-space:nowrap}
+th{background:var(--navy);color:#fff}
+td.s{font-family:"Courier New",monospace;font-weight:bold}
+.b{color:var(--good)}.w{color:var(--bad)}.t{color:#555}
+tr.dm{background:#ffd6d6}tr.db{background:#fff0c8}tr.kn{background:#ffe0b0;font-weight:bold}
+.v{font-weight:bold}
+.sum{font-weight:bold}
+.hint{color:#444;font-size:.85em}
+.bar{display:flex;gap:8px;padding:6px 4px 4px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:bold;background:var(--face);border:2px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);padding:.35em 1em;cursor:pointer;color:#000}
+button:active{border-color:var(--dk) var(--hi) var(--hi) var(--dk)}
+button:disabled{color:#808080;cursor:default}
+.pr{margin-left:auto;font-weight:bold}
+@media (max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:55% 45%}}
+</style></head><body>
+<div class="win">
+  <div class="title">
+    <span style="display: inline-flex; align-items: center;">Pareto_Dominance.exe – Uber rides in 3D 
+      <button onclick="window.location.href='sim_mobile.html?force=mobile'" style="padding: 1px 6px; font-size: 0.75em; margin-left: 12px; line-height: 1.2;">Mobile View</button>
+    </span>
+    <span>_ □ ✕</span>
+  </div>
+
+  <div class="main">
+ <div class="inset"><canvas id="cv"></canvas><div id="ll"></div><div class="tip" id="tip"></div>
+  <div class="cap">All 3 objectives MINIMIZED – closer to the origin = better</div>
+  <div class="leg"><span class="dot" style="background:#ffd700"></span>focus &nbsp;<span class="dot" style="background:#e03030"></span>dominated &nbsp;<span class="dot" style="background:#2f6fe0"></span>checked &nbsp;<span class="dot" style="background:#9aa"></span>not yet &nbsp;<span class="dot" style="background:#18a018"></span>non-dominated</div>
+ </div>
+ <div class="side"><div class="inset panel" id="pn"></div></div>
+</div>
+<div class="bar">
+ <button id="pv">◄ Prev</button><button id="nx">Next ►</button><button id="fin">Result</button><button id="rs">Restart</button><button id="ar">Auto-rotate: on</button>
+ <span class="pr" id="pr"></span>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+if(!window.THREE){$('pn').innerHTML='<h2>3D engine did not load</h2><p>Check the internet connection and reload the page.</p>';throw new Error('three missing')}
+const R=[["Auto",95,-20,3],["Bike",61,-10,3],["Bike Saver",54,-10,3],["Uber GO AC",98,-42,2],["GO Priority",135,-40,1],["GO Sedan",99,-80,2],["Premier Sedan",162,-80,2],["Uber XL",214,-90,4],["Premier XL",260,-97,4],["Black",326,-99,4]];
+const N=R.length,END=N+6,ALL=R.map((_,i)=>i);
+const dom=(a,b)=>{let s=false;for(let d=1;d<=3;d++){if(R[a][d]>R[b][d])return false;if(R[a][d]<R[b][d])s=true}return s};
+const weak=(a,b)=>a!==b&&[1,2,3].every(d=>R[a][d]<=R[b][d]);
+const strict=(a,b)=>a!==b&&[1,2,3].every(d=>R[a][d]<R[b][d]);
+const nd=i=>!ALL.some(j=>j!==i&&dom(j,i));
+const ND=()=>ALL.filter(nd);
+const IDEAL=[1,2,3].map(d=>Math.min(...R.map(r=>r[d])));
+const NADIR=[1,2,3].map(d=>Math.max(...ND().map(i=>R[i][d])));
+const kd=i=>Math.hypot(...[1,2,3].map(d=>(R[i][d]-IDEAL[d-1])/(NADIR[d-1]-IDEAL[d-1])));
+const KI=ND().sort((a,b)=>kd(a)-kd(b))[0];
+const P=r=>new THREE.Vector3((r[1]-50)/28,(r[3]-0.5)*1.5,(r[2]+100)/9.5);
+const MAXC=new THREE.Vector3(10,6,10),ZERO=new THREE.Vector3(0,0,0);
+let ex=4,s=0,auto=true,surf=true,drag=false,th=0.75,ph=1.05,rad=21,vth=0,vph=0,lastMv=0;
+let rd;try{rd=new THREE.WebGLRenderer({canvas:$('cv'),antialias:true})}catch(e){$('pn').innerHTML='<h2>WebGL is unavailable</h2><p>Open this page in a current browser with hardware acceleration on.</p>';throw e}
+const cv=$('cv'),ll=$('ll'),tip=$('tip');
+const sc=new THREE.Scene();sc.background=new THREE.Color(0xfbfbf4);
+const cam=new THREE.PerspectiveCamera(42,1,.1,100),ctr=new THREE.Vector3(5,3,5);
+let W=1,H=1;
+/* crisp DOM labels projected from 3D */
+const LB=[];let DLB=[];
+function mk(t,p,cls,col,dyn){const e=document.createElement('span');e.className='lb '+(cls||'');e.textContent=t;if(col)e.style.color=col;ll.appendChild(e);const o={e,p:p.clone()};(dyn?DLB:LB).push(o);return o}
+function clrDyn(){DLB.forEach(o=>o.e.remove());DLB=[]}
+const V=new THREE.Vector3();
+function place(o){V.copy(o.p).project(cam);if(V.z>1){o.e.style.display='none';return}o.e.style.display='';o.e.style.transform='translate('+((V.x*.5+.5)*W)+'px,'+((-V.y*.5+.5)*H)+'px) translate(-50%,-50%)'}
+/* axes */
+const ax=(b,c)=>sc.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([ZERO,b]),new THREE.LineBasicMaterial({color:c})));
+ax(new THREE.Vector3(10.6,0,0),0);ax(new THREE.Vector3(0,6.6,0),0);ax(new THREE.Vector3(0,0,10.6),0);
+const gr=new THREE.GridHelper(10,10,0xaaaaaa,0xdddddd);gr.position.set(5,0,5);sc.add(gr);
+const v3=(x,y,z)=>new THREE.Vector3(x,y,z);
+mk('Price ($) →',v3(11,-.4,0),'ax','#a00000');mk('Time (min) →',v3(0,7.2,0),'ax','#006000');mk('−Comfort →',v3(0,-.4,11.3),'ax','#000090');
+[['54',.3,-.5,-.2],['326',9.9,-.5,-.2],['1',-.7,.75,0],['4',-.7,5.25,0],['−99',-.9,-.5,.1],['−10',-.9,-.5,9.47]].forEach(a=>mk(a[0],v3(a[1],a[2],a[3]),'ax','#444'));
+/* points */
+const S=[];
+R.forEach((r,i)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.26,20,16),new THREE.MeshBasicMaterial({color:0x999999}));m.position.copy(P(r));m.userData.i=i;sc.add(m);S.push(m);mk((i+1)+' '+r[0],P(r).add(v3(0,.62,0)))});
+const dyn=new THREE.Group();sc.add(dyn);
+const arrow=(from,to,col)=>{const d=to.clone().sub(from);dyn.add(new THREE.ArrowHelper(d.clone().normalize(),from,d.length()-.3,col||0xd01010,.7,.4))};
+function addBox(a,b,col,op,edge){const d=b.clone().sub(a),m=new THREE.Mesh(new THREE.BoxGeometry(d.x,d.y,d.z),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}));m.position.copy(a).add(d.clone().multiplyScalar(.5));dyn.add(m);const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),new THREE.LineBasicMaterial({color:edge}));e.position.copy(m.position);dyn.add(e)}
+function gem(p,col,r,t,tc,dy){const m=new THREE.Mesh(new THREE.OctahedronGeometry(r),new THREE.MeshBasicMaterial({color:col}));m.position.copy(p);dyn.add(m);mk(t,p.clone().add(v3(0,dy,0)),'ax',tc,true)}
+const domSoFar=i=>ALL.some(j=>j<s&&dom(j,i));
+function colors(){const f=s>=1&&s<=N?s-1:s===N+2?ex:s===N+5?KI:-1;
+ S.forEach((m,i)=>{let c=0x9aa5aa;
+  if(s>N){c=nd(i)?0x18a018:0xe03030;if(i===f)c=0xffd700}
+  else if(s>=1){if(i===f)c=0xffd700;else if(domSoFar(i))c=0xe03030;else if(i<s)c=0x2f6fe0}
+  m.material.color.setHex(c);m.scale.setScalar(i===f?1.5:1)})}
+function surface(){const q=ND(),pts=q.map(i=>P(R[i])),pos=[];
+ for(let a=0;a<q.length;a++)for(let b=a+1;b<q.length;b++)for(let c=b+1;c<q.length;c++){const A=pts[a],B=pts[b],C=pts[c],d=2*(A.x*(B.z-C.z)+B.x*(C.z-A.z)+C.x*(A.z-B.z));if(Math.abs(d)<1e-6)continue;
+  const a2=A.x*A.x+A.z*A.z,b2=B.x*B.x+B.z*B.z,c2=C.x*C.x+C.z*C.z,ux=(a2*(B.z-C.z)+b2*(C.z-A.z)+c2*(A.z-B.z))/d,uz=(a2*(C.x-B.x)+b2*(A.x-C.x)+c2*(B.x-A.x))/d,r2=(A.x-ux)**2+(A.z-uz)**2;
+  if(pts.every((p,k)=>k===a||k===b||k===c||(p.x-ux)**2+(p.z-uz)**2>r2-1e-9))pos.push(A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z)}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+ dyn.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x18a018,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false})));
+ dyn.add(new THREE.LineSegments(new THREE.WireframeGeometry(g),new THREE.LineBasicMaterial({color:0x0a6a0a})))}
+function scene3(){dyn.clear();clrDyn();
+ if(s>=1&&s<=N){const f=s-1,o=P(R[f]);addBox(o,MAXC,0xffd700,.13,0xb08900);ALL.forEach(j=>{if(j!==f&&dom(f,j))arrow(o,P(R[j]))})}
+ if(s===N+2){const o=P(R[ex]);addBox(ZERO,o,0x2f6fe0,.15,0x1040a0);ALL.forEach(j=>{if(j!==ex&&dom(j,ex))arrow(P(R[j]),o)})}
+ if(s===N+3&&surf)surface();
+ if(s===N+4){const a=P(['',...IDEAL]),b=P(['',...NADIR]);addBox(a,b,0x9030c0,.07,0x7020a0);gem(a,0xff00ff,.42,'ideal','#a000a0',-.75);gem(b,0x7030c0,.42,'nadir','#600080',-.75)}
+ if(s===N+5){const a=P(['',...IDEAL]),k=P(R[KI]);dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,k]),new THREE.LineBasicMaterial({color:0xff6600})));gem(a,0xff00ff,.32,'ideal','#a000a0',-.6);mk('knee: '+R[KI][0],k.clone().add(v3(0,.95,0)),'ax','#cc4400',true)}
+ if(s===N+6)ALL.forEach(a=>ALL.forEach(b=>{if(dom(a,b)){const o=P(R[a]);arrow(o,P(R[b]));const m=new THREE.Mesh(new THREE.RingGeometry(.4,.52,28),new THREE.MeshBasicMaterial({color:0xff8800,side:THREE.DoubleSide}));m.position.copy(o);m.userData.bb=1;dyn.add(m)}}))}
+/* panel */
+const sym=(x,y)=>x<y?'<td class="s b">&lt; '+y+'</td>':x>y?'<td class="s w">&gt; '+y+'</td>':'<td class="s t">= '+y+'</td>';
+function panel(){const p=$('pn'),q=ND(),F=R[s-1];
+ if(s===0){p.innerHTML='<h2>The rule</h2><p><b>A dominates B</b> when A is <b>no worse</b> in every objective and <b>strictly better</b> in at least one.</p><div class="f">fᵢ(A) ≤ fᵢ(B) for all i<br>fᵢ(A) &lt; fᵢ(B) for some i</div><p>Our 3 objectives (all minimized):<br><b>Price</b>, <b>−Comfort</b> (comfort negated), <b>Time</b>.</p><p>We take each of the <b>10 Uber options</b> in turn as the <i>focus</i>, check it against the other 9, and draw an arrow to everything it dominates.</p><p class="sum">Press Next ► to begin.</p><p class="hint">Drag to rotate | scroll to zoom | hover a point for its values | ← → keys to step</p>';return}
+ if(s===N+1){const f2=ALL.filter(i=>!nd(i));p.innerHTML='<h2>Result: non-dominated vs dominated</h2><p class="sum b">Non-dominated ('+q.length+')</p><p>'+q.map(i=>(i+1)+' '+R[i][0]).join(' | ')+'</p><p class="sum w">Dominated ('+f2.length+')</p><p>'+f2.map(i=>{const j=ALL.find(k=>dom(k,i));return (i+1)+' '+R[i][0]+' ← dominated by '+(j+1)+' '+R[j][0]}).join('<br>')+'</p><p>The 8 green points are the best trade-offs: no weights chosen, yet 2 rides are eliminated. Next ► gives them their proper names.</p>';return}
+ if(s===N+2){const o=R[ex],dm=ALL.filter(j=>j!==ex&&dom(j,ex));
+  p.innerHTML='<h2>Pareto-optimal solution</h2><p>A solution is <b>Pareto-optimal</b> if <b>no other feasible solution dominates it</b>: no objective can be improved without worsening another.</p><p>Test a ride – click a number:</p><div>'+ALL.map(j=>'<button style="padding:.1em .6em;margin:2px'+(j===ex?';background:#ffd700':'')+'" onclick="ex='+j+';upd()">'+(j+1)+'</button>').join('')+'</div><div class="f">'+(ex+1)+' '+o[0]+' ('+o[1]+', '+o[2]+', '+o[3]+')</div><p>The <b style="color:#1040a0">blue box</b> holds every point that is no worse in all three objectives.</p><p class="sum">'+(dm.length?'<span class="w">Inside it: '+dm.map(j=>R[j][0]).join(', ')+' → dominated, NOT Pareto-optimal.</span>':'<span class="b">Nothing else inside → Pareto-optimal ✔</span>')+'</p>';return}
+ if(s===N+3){p.innerHTML='<h2>Set vs. front</h2><p><b>Pareto-optimal set</b> – the <i>solutions themselves</i>:</p><p class="sum b">{'+q.map(i=>R[i][0]).join(', ')+'}</p><p><b>Pareto front</b> – their <i>objective vectors</i>, the 8 green points:</p><table><tr><th>Ride</th><th>Price</th><th>−Comf</th><th>Time</th></tr>'+q.map(i=>'<tr><td>'+R[i][0]+'</td><td>'+R[i][1]+'</td><td>'+R[i][2]+'</td><td>'+R[i][3]+'</td></tr>').join('')+'</table><p class="hint">These are 8 discrete rides, so the true front is 8 points. A continuous problem with 3 objectives can have a front that is a surface; the green sheet only illustrates that idea. Points on it between rides are not real options.</p><button onclick="surf=!surf;upd()">'+(surf?'Hide':'Show')+' illustrative surface</button>';return}
+ if(s===N+4){p.innerHTML='<h2>Ideal &amp; nadir points</h2><p><b>Ideal point</b> – the best value of each objective on its own:</p><div class="f">z* = ('+IDEAL.join(', ')+')</div><p>No ride has all three (Bike Saver is cheapest, Black most comfortable, GO Priority fastest) – that is the conflict.</p><p><b>Nadir point</b> – the worst value of each objective over the non-dominated set:</p><div class="f">z_nad = ('+NADIR.join(', ')+')</div><p>Together they form the purple box that contains the whole front.</p>';return}
+ if(s===N+5){const arr=q.slice().sort((a,b)=>kd(a)-kd(b));p.innerHTML='<h2>Knee point</h2><p>The <b>knee</b> is where a small gain in one objective starts to cost a lot in another. A common heuristic: the non-dominated point <b>closest to the ideal</b> after normalising each objective between ideal and nadir.</p><div class="f">d = √Σ ((fᵢ − zᵢ*) / (zᵢnad − zᵢ*))²</div><table><tr><th>Ride</th><th>d</th></tr>'+arr.map(i=>'<tr class="'+(i===KI?'kn':'')+'"><td>'+R[i][0]+'</td><td class="s">'+kd(i).toFixed(3)+'</td></tr>').join('')+'</table><p class="sum">Knee here: <span style="color:#cc4400">'+R[KI][0]+'</span> – a balanced pick on this heuristic.</p><p class="hint">The orange line joins the ideal point to the knee.</p>';return}
+ if(s===N+6){
+   const pr=[];ALL.forEach(a=>ALL.forEach(b=>{if(dom(a,b))pr.push([a,b])}));
+   const nw=ALL.reduce((n,a)=>n+ALL.filter(b=>weak(a,b)).length,0);
+   const ns=ALL.reduce((n,a)=>n+ALL.filter(b=>strict(a,b)).length,0);
+   p.innerHTML='<h2>Weak vs. strict dominance</h2>'
+     +'<table><tr><th>Relation</th><th>Symbol</th><th>Condition</th></tr>'
+     +'<tr><td>Weak dominance</td><td class="s">x ≤ y</td><td>fᵢ(x) ≤ fᵢ(y) for all i</td></tr>'
+     +'<tr><td><b>Pareto dominance</b></td><td class="s"><b>x ≺ y</b></td><td>weak <b>+</b> fᵢ(x) &lt; fᵢ(y) for at least one i</td></tr>'
+     +'<tr><td>Strict dominance</td><td class="s">x ≪ y</td><td>fᵢ(x) &lt; fᵢ(y) for <b>all</b> i</td></tr>'
+     +'</table>'
+     +'<p class="sum">Nesting: <b>x ≪ y ⇒ x ≺ y ⇒ x ≤ y</b>. The reverse implications fail.</p>'
+     +'<p>The only two dominance relations in this dataset are:</p>'
+     +'<ul style="padding-left:1.4em;margin:.3em 0">'
+     +'<li><b style="color:#cc4400">Bike Saver ≺ Bike</b> — Price 54 vs 61, but <b>ties</b> on −Comfort (−10 = −10) and Time (3 = 3).</li>'
+     +'<li><b style="color:#cc4400">GO Sedan ≺ Premier Sedan</b> — Price 99 vs 162, but <b>ties</b> on −Comfort (−80 = −80) and Time (2 = 2).</li>'
+     +'</ul>'
+     +'<p>Because every dominance pair has a tie, there are <b>zero strict-dominance pairs</b> in this dataset. Strict dominance is a much stronger statement than Pareto dominance.</p>'
+     +'<p class="sum">Weak pairs: <b>'+nw+'</b> | Pareto pairs: <b>'+pr.length+'</b> | Strict pairs: <b>'+ns+'</b></p>'
+     +'<p class="hint">Orange rings on the 3D plot mark the dominators of each pair; arrows point at the dominated.</p>';
+   return;
+ }
+ let h='<h2>Step '+s+'/'+N+' – focus: '+s+' '+F[0]+'</h2><div class="f">('+F[1]+', '+F[2]+', '+F[3]+')</div><table><tr><th>vs.</th><th>Price</th><th>−Comf</th><th>Time</th><th>Verdict</th></tr>',dm=[],db=[];
+ R.forEach((r,j)=>{if(j===s-1)return;const a=dom(s-1,j),b=dom(j,s-1);if(a)dm.push(r[0]);if(b)db.push(r[0]);
+  h+='<tr class="'+(a?'dm':b?'db':'')+'"><td>'+(j+1)+' '+r[0]+'</td>'+[1,2,3].map(d=>sym(F[d],r[d])).join('')+'<td class="v">'+(a?'<span class="w">✔ dominated</span>':b?'<span style="color:#a05a00">✘ dominates focus</span>':'<span class="t">– trade-off</span>')+'</td></tr>'});
+ p.innerHTML=h+'</table><p class="sum">'+(dm.length?'Focus dominates: '+dm.join(', ')+'.':'Focus dominates nothing.')+(db.length?'<br><span style="color:#a05a00">It is dominated by: '+db.join(', ')+'.</span>':'')+'</p><p class="hint">&lt; focus better | = tie | &gt; focus worse</p>'}
+function upd(){colors();panel();scene3();$('pr').textContent=s===0?'Intro':s===N+1?'Result':s>N?'Terms '+(s-N-1)+' / 5':'Step '+s+' / '+N;$('pv').disabled=s===0;$('nx').disabled=s===END}
+const go=n=>{s=Math.max(0,Math.min(END,n));if(document.activeElement)document.activeElement.blur();upd()};
+$('nx').onclick=()=>go(s+1);$('pv').onclick=()=>go(s-1);$('fin').onclick=()=>go(N+1);$('rs').onclick=()=>go(0);
+$('ar').onclick=e=>{auto=!auto;e.target.textContent='Auto-rotate: '+(auto?'on':'off')};
+addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(s+1)}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(s-1)}});
+/* orbit with inertia + hover tooltip */
+let lx=0,ly=0;const rc=new THREE.Raycaster(),mp=new THREE.Vector2();
+cv.addEventListener('pointerdown',e=>{drag=true;vth=vph=0;lx=e.clientX;ly=e.clientY;tip.style.display='none';cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+cv.addEventListener('pointermove',e=>{
+ if(drag){vth=-(e.clientX-lx)*.008;vph=-(e.clientY-ly)*.006;th+=vth;ph=Math.max(.2,Math.min(1.5,ph+vph));lx=e.clientX;ly=e.clientY;lastMv=performance.now();return}
+ const b=cv.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);rc.setFromCamera(mp,cam);
+ const h=rc.intersectObjects(S)[0];
+ if(h){const i=h.object.userData.i,r=R[i];tip.innerHTML='<b>'+(i+1)+' '+r[0]+'</b><br>Price '+r[1]+' | −Comfort '+r[2]+' | Time '+r[3]+'<br>'+(nd(i)?'<span class="b">non-dominated</span>':'<span class="w">dominated by '+ALL.filter(j=>dom(j,i)).map(j=>R[j][0]).join(', ')+'</span>');
+  tip.style.display='block';const x=e.clientX-b.left+16,y=e.clientY-b.top+12;tip.style.left=Math.min(x,b.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,b.height-tip.offsetHeight-6)+'px'}
+ else tip.style.display='none'});
+cv.addEventListener('pointerup',()=>{drag=false;if(performance.now()-lastMv>90)vth=vph=0;cv.style.cursor='grab'});
+cv.addEventListener('pointerleave',()=>{tip.style.display='none'});
+cv.addEventListener('wheel',e=>{e.preventDefault();rad=Math.max(10,Math.min(34,rad+e.deltaY*.02))},{passive:false});
+function size(){const r=cv.parentElement.getBoundingClientRect();W=r.width;H=r.height;rd.setSize(W,H,false);rd.setPixelRatio(Math.min(devicePixelRatio,2));cam.aspect=W/H;cam.updateProjectionMatrix()}
+addEventListener('resize',size);
+(function loop(){
+ if(!drag){th+=vth+(auto?.0025:0);ph=Math.max(.2,Math.min(1.5,ph+vph));vth*=.93;vph*=.93}
+ cam.position.set(ctr.x+rad*Math.sin(ph)*Math.sin(th),ctr.y+rad*Math.cos(ph),ctr.z+rad*Math.sin(ph)*Math.cos(th));cam.lookAt(ctr);cam.updateMatrixWorld();
+ dyn.children.forEach(c=>{if(c.userData.bb)c.quaternion.copy(cam.quaternion)});
+ rd.render(sc,cam);LB.forEach(place);DLB.forEach(place);requestAnimationFrame(loop)})();
+size();upd();
+</script></body></html>
